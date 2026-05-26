@@ -341,16 +341,19 @@
         <div id="camera" class="tab-content">
             <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
                 <button class="btn" id="camera-btn" style="margin: 0;" onclick="openCamera()">ABRIR CÁMARA</button>
-                <button class="btn" style="background: var(--muted); margin: 0;" onclick="captureAndScan()">ESCANEAR</button>
+                <button class="btn" style="background: var(--success); margin: 0; display: none;" id="scan-btn" onclick="captureAndScan()">📸 CAPTURAR</button>
             </div>
 
             <div id="camera-container" style="display: none;">
-                <video id="camera-video" style="width: 100%; border: 1px solid var(--border); margin-bottom: 0.5rem;"></video>
+                <div style="position: relative; background: var(--card); border: 2px solid var(--border); overflow: hidden; margin-bottom: 1rem;">
+                    <video id="camera-video" style="width: 100%; height: auto; display: block;"></video>
+                    <div id="camera-focus" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; height: 60%; border: 2px dashed var(--accent); pointer-events: none;"></div>
+                </div>
                 <canvas id="camera-canvas" style="display: none;"></canvas>
             </div>
 
             <div id="ocr-result" style="display: none; background: var(--card); border: 1px solid var(--border); padding: 0.8rem; margin-bottom: 1rem;">
-                <div style="color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem;">TEXTO DETECTADO:</div>
+                <div style="color: var(--success); font-size: 0.85rem; margin-bottom: 0.5rem;">✓ TEXTO DETECTADO:</div>
                 <pre id="ocr-text" style="font-size: 0.8rem; color: var(--fg); overflow-x: auto; max-height: 150px;"></pre>
                 <button class="btn" style="margin: 0; margin-top: 0.5rem;" onclick="useOCRData()">USAR ESTOS DATOS</button>
             </div>
@@ -620,6 +623,7 @@
                 const container = document.getElementById('camera-container');
                 const video = document.getElementById('camera-video');
                 const btn = document.getElementById('camera-btn');
+                const scanBtn = document.getElementById('scan-btn');
 
                 if (!cameraStream) {
                     cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -628,12 +632,14 @@
                     video.srcObject = cameraStream;
                     container.style.display = 'block';
                     btn.textContent = 'CERRAR CÁMARA';
+                    scanBtn.style.display = 'block';
                     clearOCRResult();
                 } else {
                     cameraStream.getTracks().forEach(track => track.stop());
                     cameraStream = null;
                     container.style.display = 'none';
                     btn.textContent = 'ABRIR CÁMARA';
+                    scanBtn.style.display = 'none';
                 }
             } catch (err) {
                 showCameraError('Permiso de cámara denegado o dispositivo no soportado');
@@ -650,13 +656,16 @@
                 const video = document.getElementById('camera-video');
                 const canvas = document.getElementById('camera-canvas');
                 const ctx = canvas.getContext('2d');
+                const scanBtn = document.getElementById('scan-btn');
 
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 ctx.drawImage(video, 0, 0);
 
                 // Show loading
-                showCameraError('Escaneando... (esto tarda 3-5s)');
+                const oldText = scanBtn.textContent;
+                scanBtn.textContent = '⏳ ESCANEANDO...';
+                scanBtn.disabled = true;
 
                 // OCR con Tesseract
                 const result = await Tesseract.recognize(
@@ -682,9 +691,14 @@
                     document.getElementById('food-fat').value = extracted.fat || '';
                     document.getElementById('food-base-grams').value = extracted.baseGrams || '100';
                 }
+
+                scanBtn.textContent = oldText;
+                scanBtn.disabled = false;
             } catch (err) {
                 console.error('OCR Error:', err);
                 showCameraError('Error al escanear. Completa a mano.');
+                document.getElementById('scan-btn').disabled = false;
+                document.getElementById('scan-btn').textContent = '📸 CAPTURAR';
             }
         }
 
