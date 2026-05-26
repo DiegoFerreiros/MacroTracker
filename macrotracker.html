@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Calculadora de macros sin reglas de tres">
+    <meta name="theme-color" content="#0a0a0a">
+    <title>MacroTrack</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --fg: #f5f5f5;
+            --accent: #ff4444;
+            --success: #44ff44;
+            --muted: #666;
+            --border: #222;
+            --card: #151515;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .btn-reset {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            padding: 0.4rem 0.8rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .btn-reset:active {
+            opacity: 0.7;
+        }
+
+        /* Main container */
+        main {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            gap: 1.5rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            color: var(--muted);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--fg);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Form */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input, select {
+            background: var(--card);
+            color: var(--fg);
+            border: 1px solid var(--border);
+            padding: 0.6rem;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(255, 68, 68, 0.1);
+        }
+
+        /* Button styles */
+        .btn {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            padding: 0.7rem 1.2rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        .btn:active {
+            opacity: 0.8;
+        }
+
+        /* Meals list */
+        .meal-item {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .meal-info {
+            flex: 1;
+        }
+
+        .meal-name {
+            font-weight: bold;
+            font-size: 0.95rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .meal-macros {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .macro-value {
+            color: var(--fg);
+            font-weight: bold;
+        }
+
+        .meal-actions {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .btn-small {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            padding: 0.3rem 0.5rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .btn-small:active {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* Totals */
+        .totals {
+            background: var(--card);
+            border: 2px solid var(--border);
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.8rem;
+            position: sticky;
+            bottom: 0;
+        }
+
+        .total-item {
+            text-align: center;
+        }
+
+        .total-label {
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.3rem;
+        }
+
+        .total-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--success);
+        }
+
+        /* Saved foods */
+        .food-template {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 0.6rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .food-template:hover {
+            border-color: var(--accent);
+        }
+
+        .food-template-info {
+            flex: 1;
+        }
+
+        .food-template-name {
+            font-weight: bold;
+            margin-bottom: 0.2rem;
+        }
+
+        .food-template-macros {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .btn-delete {
+            background: transparent;
+            color: var(--muted);
+            border: none;
+            padding: 0.3rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: color 0.2s;
+        }
+
+        .btn-delete:active {
+            color: var(--accent);
+        }
+
+        /* Empty state */
+        .empty {
+            text-align: center;
+            color: var(--muted);
+            padding: 2rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .meal-macros, .totals {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .meal-item {
+                flex-direction: column;
+            }
+
+            main {
+                padding: 0.8rem;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>MACROTRACK</h1>
+        <button class="btn-reset" onclick="resetDay()">RESET</button>
+    </header>
+
+    <main>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('today')">HOY</button>
+            <button class="tab-btn" onclick="switchTab('camera')">CÁMARA</button>
+            <button class="tab-btn" onclick="switchTab('add')">AÑADIR</button>
+            <button class="tab-btn" onclick="switchTab('templates')">GUARDADAS</button>
+        </div>
+
+        <!-- TAB: HOY -->
+        <div id="today" class="tab-content active">
+            <div id="meals-list"></div>
+        </div>
+
+        <!-- TAB: CÁMARA -->
+        <div id="camera" class="tab-content">
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                <button class="btn" id="camera-btn" style="margin: 0;" onclick="openCamera()">ABRIR CÁMARA</button>
+                <button class="btn" style="background: var(--muted); margin: 0;" onclick="captureAndScan()">ESCANEAR</button>
+            </div>
+
+            <div id="camera-container" style="display: none;">
+                <video id="camera-video" style="width: 100%; border: 1px solid var(--border); margin-bottom: 0.5rem;"></video>
+                <canvas id="camera-canvas" style="display: none;"></canvas>
+            </div>
+
+            <div id="ocr-result" style="display: none; background: var(--card); border: 1px solid var(--border); padding: 0.8rem; margin-bottom: 1rem;">
+                <div style="color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem;">TEXTO DETECTADO:</div>
+                <pre id="ocr-text" style="font-size: 0.8rem; color: var(--fg); overflow-x: auto; max-height: 150px;"></pre>
+                <button class="btn" style="margin: 0; margin-top: 0.5rem;" onclick="useOCRData()">USAR ESTOS DATOS</button>
+            </div>
+
+            <div id="camera-errors" style="display: none; background: var(--card); border: 1px solid var(--accent); color: var(--accent); padding: 0.6rem; margin-bottom: 1rem; font-size: 0.85rem;"></div>
+        </div>
+
+        <!-- TAB: AÑADIR -->
+        <div id="add" class="tab-content">
+            <div class="form-group">
+                <label>Nombre de la comida</label>
+                <input type="text" id="food-name" placeholder="p.ej: Pollo con arroz">
+            </div>
+
+            <div class="form-group">
+                <label>Base (gramos de referencia)</label>
+                <input type="number" id="food-base-grams" placeholder="100" value="100">
+            </div>
+
+            <div class="form-group">
+                <label>Calorías</label>
+                <input type="number" id="food-calories" placeholder="0">
+            </div>
+
+            <div class="form-group">
+                <label>Proteína (g)</label>
+                <input type="number" id="food-protein" placeholder="0" step="0.1">
+            </div>
+
+            <div class="form-group">
+                <label>Carbos (g)</label>
+                <input type="number" id="food-carbs" placeholder="0" step="0.1">
+            </div>
+
+            <div class="form-group">
+                <label>Grasas (g)</label>
+                <input type="number" id="food-fat" placeholder="0" step="0.1">
+            </div>
+
+            <div class="form-group">
+                <label>Gramos que he comido</label>
+                <input type="number" id="food-consumed-grams" placeholder="0">
+            </div>
+
+            <button class="btn" onclick="addMeal(false)">AÑADIR A HOY</button>
+            <button class="btn" onclick="addMeal(true)" style="background: var(--muted); margin-top: 0.2rem;">GUARDAR PARA DESPUÉS</button>
+        </div>
+
+        <!-- TAB: TEMPLATES -->
+        <div id="templates" class="tab-content">
+            <div id="templates-list"></div>
+        </div>
+    </main>
+
+    <!-- Totals (sticky) -->
+    <div class="totals">
+        <div class="total-item">
+            <div class="total-label">Calorías</div>
+            <div class="total-value" id="total-calories">0</div>
+        </div>
+        <div class="total-item">
+            <div class="total-label">Proteína</div>
+            <div class="total-value" id="total-protein">0g</div>
+        </div>
+        <div class="total-item">
+            <div class="total-label">Carbos</div>
+            <div class="total-value" id="total-carbs">0g</div>
+        </div>
+        <div class="total-item">
+            <div class="total-label">Grasas</div>
+            <div class="total-value" id="total-fat">0g</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
+    <script>
+        // Data structure
+        let todaysMeals = [];
+        let savedTemplates = [];
+
+        // Load from localStorage
+        function loadData() {
+            const today = new Date().toISOString().split('T')[0];
+            const stored = localStorage.getItem(`meals_${today}`);
+            if (stored) todaysMeals = JSON.parse(stored);
+
+            const templates = localStorage.getItem('food_templates');
+            if (templates) savedTemplates = JSON.parse(templates);
+
+            render();
+        }
+
+        // Save to localStorage
+        function saveData() {
+            const today = new Date().toISOString().split('T')[0];
+            localStorage.setItem(`meals_${today}`, JSON.stringify(todaysMeals));
+            localStorage.setItem('food_templates', JSON.stringify(savedTemplates));
+            updateTotals();
+        }
+
+        // Add meal
+        function addMeal(saveAsTemplate) {
+            const name = document.getElementById('food-name').value.trim();
+            const baseGrams = parseFloat(document.getElementById('food-base-grams').value) || 100;
+            const calories = parseFloat(document.getElementById('food-calories').value) || 0;
+            const protein = parseFloat(document.getElementById('food-protein').value) || 0;
+            const carbs = parseFloat(document.getElementById('food-carbs').value) || 0;
+            const fat = parseFloat(document.getElementById('food-fat').value) || 0;
+            const consumedGrams = parseFloat(document.getElementById('food-consumed-grams').value) || 0;
+
+            if (!name || consumedGrams === 0) {
+                alert('Faltan datos');
+                return;
+            }
+
+            const multiplier = consumedGrams / baseGrams;
+            const meal = {
+                id: Date.now(),
+                name,
+                calories: Math.round(calories * multiplier),
+                protein: Math.round((protein * multiplier) * 10) / 10,
+                carbs: Math.round((carbs * multiplier) * 10) / 10,
+                fat: Math.round((fat * multiplier) * 10) / 10,
+                consumedGrams
+            };
+
+            if (saveAsTemplate) {
+                savedTemplates.push({
+                    id: Date.now(),
+                    name,
+                    baseGrams,
+                    calories,
+                    protein,
+                    carbs,
+                    fat
+                });
+            } else {
+                todaysMeals.push(meal);
+            }
+
+            // Clear form
+            document.getElementById('food-name').value = '';
+            document.getElementById('food-base-grams').value = '100';
+            document.getElementById('food-calories').value = '';
+            document.getElementById('food-protein').value = '';
+            document.getElementById('food-carbs').value = '';
+            document.getElementById('food-fat').value = '';
+            document.getElementById('food-consumed-grams').value = '';
+
+            saveData();
+            render();
+        }
+
+        // Delete meal
+        function deleteMeal(id) {
+            todaysMeals = todaysMeals.filter(m => m.id !== id);
+            saveData();
+            render();
+        }
+
+        // Delete template
+        function deleteTemplate(id) {
+            savedTemplates = savedTemplates.filter(t => t.id !== id);
+            saveData();
+            render();
+        }
+
+        // Quick add from template
+        function quickAddTemplate(template) {
+            document.getElementById('food-name').value = template.name;
+            document.getElementById('food-base-grams').value = template.baseGrams;
+            document.getElementById('food-calories').value = template.calories;
+            document.getElementById('food-protein').value = template.protein;
+            document.getElementById('food-carbs').value = template.carbs;
+            document.getElementById('food-fat').value = template.fat;
+            document.getElementById('food-consumed-grams').focus();
+            switchTab('add');
+        }
+
+        // Update totals
+        function updateTotals() {
+            const totals = todaysMeals.reduce(
+                (acc, meal) => ({
+                    calories: acc.calories + meal.calories,
+                    protein: acc.protein + meal.protein,
+                    carbs: acc.carbs + meal.carbs,
+                    fat: acc.fat + meal.fat
+                }),
+                { calories: 0, protein: 0, carbs: 0, fat: 0 }
+            );
+
+            document.getElementById('total-calories').textContent = totals.calories;
+            document.getElementById('total-protein').textContent = totals.protein.toFixed(1) + 'g';
+            document.getElementById('total-carbs').textContent = totals.carbs.toFixed(1) + 'g';
+            document.getElementById('total-fat').textContent = totals.fat.toFixed(1) + 'g';
+        }
+
+        // Switch tabs
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Reset day
+        function resetDay() {
+            if (confirm('¿Borrar todas las comidas de hoy?')) {
+                todaysMeals = [];
+                saveData();
+                render();
+            }
+        }
+
+        // Render
+        function render() {
+            // Meals list
+            const mealsList = document.getElementById('meals-list');
+            if (todaysMeals.length === 0) {
+                mealsList.innerHTML = '<div class="empty">Sin comidas registradas</div>';
+            } else {
+                mealsList.innerHTML = todaysMeals.map(meal => `
+                    <div class="meal-item">
+                        <div class="meal-info">
+                            <div class="meal-name">${meal.name} (${meal.consumedGrams}g)</div>
+                            <div class="meal-macros">
+                                <div>${Math.round(meal.calories)} cal</div>
+                                <div><span class="macro-value">${meal.protein.toFixed(1)}</span>p</div>
+                                <div><span class="macro-value">${meal.carbs.toFixed(1)}</span>c</div>
+                                <div><span class="macro-value">${meal.fat.toFixed(1)}</span>g</div>
+                            </div>
+                        </div>
+                        <div class="meal-actions">
+                            <button class="btn-small" onclick="deleteMeal(${meal.id})">✕</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Templates list
+            const templatesList = document.getElementById('templates-list');
+            if (savedTemplates.length === 0) {
+                templatesList.innerHTML = '<div class="empty">Sin plantillas guardadas</div>';
+            } else {
+                templatesList.innerHTML = savedTemplates.map(template => `
+                    <div class="food-template" onclick="quickAddTemplate(${JSON.stringify(template).replace(/"/g, '&quot;')})">
+                        <div class="food-template-info">
+                            <div class="food-template-name">${template.name}</div>
+                            <div class="food-template-macros">${template.calories} cal | ${template.protein}p | ${template.carbs}c | ${template.fat}g (x${template.baseGrams}g)</div>
+                        </div>
+                        <button class="btn-delete" onclick="event.stopPropagation(); deleteTemplate(${template.id})">✕</button>
+                    </div>
+                `).join('');
+            }
+
+            updateTotals();
+        }
+
+        // Init
+        loadData();
+
+        // ===== CAMERA & OCR =====
+        let cameraStream = null;
+
+        async function openCamera() {
+            try {
+                const container = document.getElementById('camera-container');
+                const video = document.getElementById('camera-video');
+                const btn = document.getElementById('camera-btn');
+
+                if (!cameraStream) {
+                    cameraStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'environment' }
+                    });
+                    video.srcObject = cameraStream;
+                    container.style.display = 'block';
+                    btn.textContent = 'CERRAR CÁMARA';
+                    clearOCRResult();
+                } else {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                    cameraStream = null;
+                    container.style.display = 'none';
+                    btn.textContent = 'ABRIR CÁMARA';
+                }
+            } catch (err) {
+                showCameraError('Permiso de cámara denegado o dispositivo no soportado');
+            }
+        }
+
+        async function captureAndScan() {
+            if (!cameraStream) {
+                showCameraError('Abre la cámara primero');
+                return;
+            }
+
+            try {
+                const video = document.getElementById('camera-video');
+                const canvas = document.getElementById('camera-canvas');
+                const ctx = canvas.getContext('2d');
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0);
+
+                // Show loading
+                showCameraError('Escaneando... (esto tarda 3-5s)');
+
+                // OCR con Tesseract
+                const result = await Tesseract.recognize(
+                    canvas.toDataURL('image/jpeg'),
+                    'spa'
+                );
+
+                const text = result.data.text;
+                console.log('OCR Raw:', text);
+
+                // Try to extract numbers
+                const extracted = extractNutritionData(text);
+                
+                document.getElementById('ocr-text').textContent = text;
+                document.getElementById('ocr-result').style.display = 'block';
+                document.getElementById('camera-errors').style.display = 'none';
+
+                // Pre-fill if we found something
+                if (extracted.calories || extracted.protein || extracted.carbs || extracted.fat) {
+                    document.getElementById('food-calories').value = extracted.calories || '';
+                    document.getElementById('food-protein').value = extracted.protein || '';
+                    document.getElementById('food-carbs').value = extracted.carbs || '';
+                    document.getElementById('food-fat').value = extracted.fat || '';
+                    document.getElementById('food-base-grams').value = extracted.baseGrams || '100';
+                }
+            } catch (err) {
+                console.error('OCR Error:', err);
+                showCameraError('Error al escanear. Completa a mano.');
+            }
+        }
+
+        function extractNutritionData(text) {
+            // Búsqueda muy naive de números
+            // Nota: esto es frágil, pero es un start
+            
+            const lines = text.toLowerCase().split('\n');
+            const result = {
+                calories: '',
+                protein: '',
+                carbs: '',
+                fat: '',
+                baseGrams: '100'
+            };
+
+            for (const line of lines) {
+                // Calorías (busca "cal", "kcal", "calories")
+                if (line.match(/cal/i)) {
+                    const num = line.match(/(\d+(\.\d+)?)\s*(kcal|cal)?/);
+                    if (num && num[1]) result.calories = Math.round(parseFloat(num[1]));
+                }
+
+                // Proteína (busca "prot", "protein", "p:")
+                if (line.match(/prot|protein|^\s*p\s*[:\s]/i)) {
+                    const num = line.match(/(\d+(\.\d+)?)\s*g?/);
+                    if (num && num[1]) result.protein = parseFloat(num[1]).toFixed(1);
+                }
+
+                // Carbos (busca "carb", "hidratos", "ch:")
+                if (line.match(/carb|hidrato|ch\s*:|gluc/i)) {
+                    const num = line.match(/(\d+(\.\d+)?)\s*g?/);
+                    if (num && num[1]) result.carbs = parseFloat(num[1]).toFixed(1);
+                }
+
+                // Grasas (busca "fat", "grasas", "lípid", "g:")
+                if (line.match(/fat|grasa|lipid|^\s*g\s*[:\s]/i)) {
+                    const num = line.match(/(\d+(\.\d+)?)\s*g?/);
+                    if (num && num[1]) result.fat = parseFloat(num[1]).toFixed(1);
+                }
+
+                // Base (busca "x100", "por 100", "100g")
+                if (line.match(/x\s*100|por\s*100|100\s*g/i)) {
+                    result.baseGrams = '100';
+                }
+            }
+
+            return result;
+        }
+
+        function useOCRData() {
+            // Los campos ya están rellenados, solo navegamos a la siguiente pestaña
+            switchTab('add');
+            document.getElementById('food-consumed-grams').focus();
+        }
+
+        function clearOCRResult() {
+            document.getElementById('ocr-result').style.display = 'none';
+            document.getElementById('ocr-text').textContent = '';
+            document.getElementById('camera-errors').style.display = 'none';
+        }
+
+        function showCameraError(msg) {
+            const errDiv = document.getElementById('camera-errors');
+            errDiv.textContent = msg;
+            errDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
